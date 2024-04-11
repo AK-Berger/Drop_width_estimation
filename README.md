@@ -1,11 +1,12 @@
 # About the drop width estimation project
 
 Capturing side-view videos from sliding drops offers a robust method to researchers for investigating the surface and drop dynamics. However, in some studies, it's essential to examine certain aspects like the width of the drop from a front-view perspective as well. The drop's width is a crucial parameter because of its association with the lateral adhesion force and the friction force.  In such situations, the common practice of incorporating extra cameras or mirrors to monitor changes in the drop from a front-view perspective is often cumbersome and reduces the viewing area. Also, this limitation can impede a comprehensive analysis of sliding drops, especially when dealing with scenarios that entail surface defects. 
-We proposed an approach that eliminates the need to incorporate additional equipment into the experimental setup and, also, ensures the viewing area remains unrestricted. The Long Short Term Memory (LSTM) model with a 20-sliding window has the error of 67 µm based on RMSE. Within the spectrum of drop widths in our dataset, ranging from 1.6 mm to 4.4 mm, this RMSE indicates that with our approach we can predict the width of sliding drops with an error of 2.4%. Furthermore, the applied LSTM model provides a drop width across the whole sliding length of 5 cm, previously unattainable.
+We proposed an approach that eliminates the need to incorporate additional equipment into the experimental setup and, also, ensures the viewing area remains unrestricted. The Long Short Term Memory (LSTM) model with a 20-sliding window has an error of 67 µm based on RMSE. Within the spectrum of drop widths in our dataset, ranging from 1.6 mm to 4.4 mm, this RMSE indicates that with our approach we can predict the width of sliding drops with an error of 2.4%. Furthermore, the applied LSTM model provides a drop width across the whole sliding length of 5 cm, previously unattainable.
 
 
+https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b
 
-![the experimental setup](https://github.com/AK-Berger/Drop_width_estimation/blob/main/The%20setup.png)
+
 
 ---
 # Publication Information:
@@ -14,7 +15,7 @@ Title: Estimating front-view drop width via side-view features using recurrent n
 
 Authors: Sajjad Shumaly, Fahimeh Darvish, Xiaomei Li, Oleksandra Kukharenko, Werner Steffen, Hans-Jürgen Butt, Rüdiger Berger*
 
-Journal: Scientific reports
+Journal: ---
 
 Publication Date: Jun --, 2024
 
