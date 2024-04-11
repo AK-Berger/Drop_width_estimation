@@ -38,7 +38,7 @@ DOI: ---------------------
 
 ### The dataset
 
-- Dataset.xlsx
+- dataset.xlsx
 
     The "Dataset.xlsx" file represents the dataset we compiled after processing and integrating the sliding drop videos. In this dataset, the "Status" column indicates whether a video is associated with training, testing, or final validation measurements. Initially, we made random selections for these assignments but later maintained consistency across all algorithms to ensure a fair comparison across different models. It's worth noting that the final validation records differ from the regular validation records. After dividing the dataset into testing and training subsets, we further split the training data into the typical training and validation sets for the training process. Final validation involves measurements conducted externally to the dataset, serving to assess the model's validity.
 
