@@ -13,7 +13,7 @@ https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e
 
 Title: Estimating drop width via side-view features using recurrent neural networks
 
-Authors: Sajjad Shumaly, Fahimeh Darvish, Xiaomei Li, Oleksandra Kukharenko, Werner Steffen, Hans-Jürgen Butt, Rüdiger Berger*
+Authors: Sajjad Shumaly, Fahimeh Darvish, Xiaomei Li, Oleksandra Kukharenko, Werner Steffen, Yanhui Guo, Hans-Jürgen Butt, Rüdiger Berger*
 
 Journal: Scientific Reports
 
