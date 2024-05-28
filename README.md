@@ -15,11 +15,11 @@ Title: Estimating front-view drop width via side-view features using recurrent n
 
 Authors: Sajjad Shumaly, Fahimeh Darvish, Xiaomei Li, Oleksandra Kukharenko, Werner Steffen, Hans-Jürgen Butt, Rüdiger Berger*
 
-Journal: ---
+Journal: Scientific Reports
 
-Publication Date: Jun --, 2024
+Publication Date: May 27, 2024
 
-DOI: ---------------------
+DOI: doi.org/10.1038/s41598-024-62194-w
 
 ---
 # Data Information:
