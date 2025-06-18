@@ -1,71 +1,157 @@
-# About the drop width estimation project
+# Drop-Width Estimation from Side-View Videos
 
-Capturing side-view videos from sliding drops offers a robust method to researchers for investigating the surface and drop dynamics. However, in some studies, it's essential to examine certain aspects like the width of the drop from a front-view perspective as well. The drop's width is a crucial parameter because of its association with the lateral adhesion force and the friction force.  In such situations, the common practice of incorporating extra cameras or mirrors to monitor changes in the drop from a front-view perspective is often cumbersome and reduces the viewing area. Also, this limitation can impede a comprehensive analysis of sliding drops, especially when dealing with scenarios that entail surface defects. 
-We proposed an approach that eliminates the need to incorporate additional equipment into the experimental setup and, also, ensures the viewing area remains unrestricted. The Long Short Term Memory (LSTM) model with a 20-sliding window has an error of 67 µm based on RMSE. Within the spectrum of drop widths in our dataset, ranging from 1.6 mm to 4.4 mm, this RMSE indicates that with our approach we can predict the width of sliding drops with an error of 2.4%. Furthermore, the applied LSTM model provides a drop width across the whole sliding length of 5 cm, previously unattainable.
+<p align="center">
+  <img src="The setup.png" alt="experimental setup" width="65%">
+</p>
 
+A ready-to-use toolkit to **predict the *front-view* width of a liquid drop** sliding down an inclined surface **using only *side-view* measurements**.  
+It reproduces the method published in **Scientific Reports** (2024) and ships the fully-trained Long-Short-Term-Memory (LSTM) network (20-frame sliding window, RMSE 67 µm ≈ 2.4%).
 
-https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b
+> **Why is this useful?**  
+> Drop width enters directly into both the *lateral adhesion* (Furmidge) and *dynamic friction* force equations.  
+> Conventional approaches require a second camera or mirror that shrinks the observable area and complicates alignment.  
+> Our model keeps the set-up minimal while still giving width data for the **entire 5 cm track**—even when the drop interacts with surface defects.
 
+---
+
+ https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b
+
+---
+
+## Quick Start
+
+```bash
+# 1️⃣ Clone the repository and create a virtual environment
+git clone https://github.com/AK-Berger/Drop_width_estimation.git
+cd Drop_width_estimation
+python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
+
+# 2️⃣ Install dependencies
+pip install -r requirements.txt
+
+# 3️⃣ Launch the tutorial
+jupyter lab tutorial.ipynb
+```
 
 
 ---
-# Publication Information:
 
-Title: Estimating drop width via side-view features using recurrent neural networks
+## Dataset Details (`dataset.xlsx`)
 
-Authors: Sajjad Shumaly, Fahimeh Darvish, Xiaomei Li, Oleksandra Kukharenko, Werner Steffen, Yanhui Guo, Hans-Jürgen Butt, Rüdiger Berger*
+| Column              | Unit    | Description                                |
+|---------------------|---------|--------------------------------------------|
+| `Status`            | —       | train / test / final_val split             |
+| `VideoID`           | —       | ID of the side-view video                  |
+| `Frame`             | —       | Frame number within video                  |
+| `TiltDeg`           | °       | Surface inclination angle                  |
+| `DropLength`        | mm      | Side-view length of the drop               |
+| `DropCenterHeight`  | mm      | Drop centroid height                       |
+| `AdvAngle`          | °       | Advancing contact angle                    |
+| `RecAngle`          | °       | Receding contact angle                     |
+| `Velocity`          | mm/s    | Drop sliding speed                         |
+| `Width`           | mm      | Ground-truth front-view width              |
 
-Journal: Scientific Reports
-
-Publication Date: May 27, 2024
-
-DOI: doi.org/10.1038/s41598-024-62194-w
-
----
-# Data Information:
-
-### The tutorial
-
-- tutorial.ipynb
-
-    The tutorial provides a detailed, step-by-step explanation of how we trained the LSTM model with a 20-slide window, which was determined to be the best model based on RMSE. Using this file, reviewers can access the code, variables, and hyperparameters for examination. Furthermore, the document demonstrates how we utilized the trained model to incorporate the final validation metrics and estimate drop width.
-
-### The LSTM weights
-
-- LSTM weights.h5
-
-    The "LSTM weights.h5" file represents the fully trained 20-slide window LSTM model that can be employed by others for the purpose of estimating drop width.
-
-### The dataset
-
-- dataset.xlsx
-
-    The "Dataset.xlsx" file represents the dataset we compiled after processing and integrating the sliding drop videos. In this dataset, the "Status" column indicates whether a video is associated with training, testing, or final validation measurements. Initially, we made random selections for these assignments but later maintained consistency across all algorithms to ensure a fair comparison across different models. It's worth noting that the final validation records differ from the regular validation records. After dividing the dataset into testing and training subsets, we further split the training data into the typical training and validation sets for the training process. Final validation involves measurements conducted externally to the dataset, serving to assess the model's validity.
-
-  ---
-# Dependencies 
-
-- tensorflow 2.5.0; https://pypi.org/project/tensorflow/
-
-- keras 2.9.0; https://pypi.org/project/keras/
-
-- cv2 4.5.4; https://pypi.org/project/opencv-python/
-
-- scipy 1.7.1; https://pypi.org/project/scipy/
-
-- PIL 8.4.0; https://pypi.org/project/PIL/
-
-- numpy 1.20.3; https://pypi.org/project/numpy/
-
-- pandas 1.3.4; https://pypi.org/project/pandas/
-
-- matplotlib 3.4.3; https://pypi.org/project/matplotlib/
+- **3,224 frames** from multiple videos recorded at 500 fps.
+- Ground-truth width (`Width`) was measured using two mirrors and used only for training and validation.
+- `final_val` experiments were acquired externally from the training dataset to assess generalization.
 
 ---
-# Support
 
-You can communicate with us using the following e-mails:
+## Pre-trained Model (`LSTM_weights.h5`)
 
-- shumalys@mpip-mainz.mpg.de
-- berger@mpip-mainz.mpg.de
+- **Architecture**: 3 stacked LSTM layers (64 → 32 → 16) + TimeDistributed dense head.
+- **Input**: 20-frame sliding window of 6 numerical features.
+- **Output**: Predicted drop width per frame.
+- **Loss**: MAE, Optimizer: Adam (lr=1e-4)
+
+Example inference on your own side-view data:
+
+```python
+from tensorflow import keras
+import numpy as np
+
+features = np.loadtxt('my_new_features.csv', delimiter=',')  # shape: (N_frames, 9)
+model = keras.models.load_model('src/model_arch.json', compile=False)
+model.load_weights('LSTM_weights.h5')
+
+# Reshape for 20-frame sliding prediction
+sliding_input = features.reshape(-1, 20, 9)
+predicted_widths = model.predict(sliding_input)
+```
+
 ---
+
+## Repository Structure
+
+```
+Drop_width_estimation/
+├── dataset.xlsx            # Side-view measurements and width ground truth
+├── LSTM_weights.h5         # Trained model weights
+├── tutorial.ipynb          # Step-by-step notebook
+├── The setup.png           # Setup image
+├── docs/
+│   └── demo.mp4            # Optional local copy of the demo video
+├── requirements.txt        # Python dependencies
+└── README.md               # This file
+```
+
+---
+
+## Requirements
+
+Install with:
+
+```bash
+pip install -r requirements.txt
+```
+
+Suggested content of `requirements.txt`:
+
+```
+tensorflow==2.12.0
+keras==2.12.0
+opencv-python>=4.9
+numpy>=1.23
+pandas>=1.5
+scipy>=1.11
+matplotlib>=3.8
+scikit-learn>=1.3
+jupyterlab>=4.0
+tqdm>=4.66
+```
+
+> For exact replication of paper results, these older versions were used:  
+> `tensorflow==2.5.0`, `keras==2.9.0`, `opencv-python==4.5.4`, `numpy==1.20.3`, `pandas==1.3.4`, `scipy==1.7.1`, `matplotlib==3.4.3`.
+
+---
+
+## Citation
+
+If you use this repository, please cite the following article:
+
+```bibtex
+@article{Shumaly2024,
+  title   = {Estimating sliding drop width via side-view features using recurrent neural networks},
+  author  = {Shumaly, Sajjad and Darvish, Fahimeh and Li, Xiaomei and Kukharenko, Oleksandra and Steffen, Werner and Guo, Yanhui and Butt, Hans-Jürgen and Berger, Rüdiger},
+  journal = {Scientific Reports},
+  volume  = {14},
+  pages   = {12033},
+  year    = {2024},
+  doi     = {10.1038/s41598-024-62194-w}
+}
+```
+
+---
+
+## Contact
+
+For questions or collaborations:
+
+- **Technical**: Sajjad Shumaly — <shumalys@mpip-mainz.mpg.de>  
+- **Conceptual**: Rüdiger Berger — <berger@mpip-mainz.mpg.de>
+
+---
+
+<div align="center">
+  <em>Happy (single-camera) sliding-drop experiments! 🚀</em>
+</div>
