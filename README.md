@@ -4,135 +4,165 @@
   <img src="The setup.png" alt="experimental setup" width="65%">
 </p>
 
-A ready-to-use toolkit to **predict the *front-view* width of a liquid drop** sliding down an inclined surface **using only *side-view* measurements**.  
-It reproduces the method published in **Scientific Reports** (2024) and ships the fully-trained Long-Short-Term-Memory (LSTM) network (20-frame sliding window, RMSE 67 µm ≈ 2.4%).
 
-> **Why is this useful?**  
-> Drop width enters directly into both the *lateral adhesion* (Furmidge) and *dynamic friction* force equations.  
-> Conventional approaches require a second camera or mirror that shrinks the observable area and complicates alignment.  
-> Our model keeps the set-up minimal while still giving width data for the **entire 5 cm track**—even when the drop interacts with surface defects.
 
----
+A Python toolkit to estimate the **front-view width** of a liquid drop sliding down an inclined surface using only **side-view** measurements.\
+Implementation of Shumaly *et al.*, **Scientific Reports** (2024).
 
- https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b
+> **Why is this useful?**\
+> Drop width enters directly into both the *lateral adhesion* (Furmidge) and *dynamic friction* force equations.\
+> Conventional approaches require a second camera or mirror that shrinks the observable area and complicates alignment.\
+> Our model keeps the set-up minimal while still giving width data for the **entire 5 cm track**—even when the drop interacts with surface defects.
 
 ---
 
-## Quick Start
+[https://github.com/AK-Berger/Drop\_width\_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b](https://github.com/AK-Berger/Drop_width_estimation/assets/57271994/85117226-5a3e-46f6-be1c-7ed3f92c787b)
+
+---
+
+## Table of Contents
+
+- [Features](#features)
+- [Installation](#installation)
+- [Usage](#usage)
+  - [Training](#training)
+  - [Inference](#inference)
+- [Data Structure](#data-structure)
+- [Model Architecture](#model-architecture)
+- [Output](#output)
+- [Project Structure](#project-structure)
+- [Requirements](#requirements)
+- [License](#license)
+- [Citation](#citation)
+- [Contact](#contact)
+
+## Features
+
+- Train an LSTM-based regression model on side-view drop features.
+- Predict drop width from new video data for any **Video ID**.
+- Automatic normalization, sliding-window slicing, and result plotting.
+- Example scripts: `train_model.py` and `inference.py`.
+
+## Installation
 
 ```bash
-# 1️⃣ Clone the repository and create a virtual environment
 git clone https://github.com/AK-Berger/Drop_width_estimation.git
 cd Drop_width_estimation
 python -m venv .venv && source .venv/bin/activate   # Windows: .venv\Scripts\activate
-
-# 2️⃣ Install dependencies
 pip install -r requirements.txt
-
-# 3️⃣ Launch the tutorial
-jupyter lab tutorial.ipynb
 ```
 
+## Usage
 
----
+### Training
 
-## Dataset Details (`dataset.xlsx`)
-
-| Column              | Unit    | Description                                |
-|---------------------|---------|--------------------------------------------|
-| `Status`            | —       | train / test / final_val split             |
-| `VideoID`           | —       | ID of the side-view video                  |
-| `Frame`             | —       | Frame number within video                  |
-| `TiltDeg`           | °       | Surface inclination angle                  |
-| `DropLength`        | mm      | Side-view length of the drop               |
-| `DropCenterHeight`  | mm      | Drop centroid height                       |
-| `AdvAngle`          | °       | Advancing contact angle                    |
-| `RecAngle`          | °       | Receding contact angle                     |
-| `Velocity`          | mm/s    | Drop sliding speed                         |
-| `Width`           | mm      | Ground-truth front-view width              |
-
-- **3,224 frames** from multiple videos recorded at 500 fps.
-- Ground-truth width (`Width`) was measured using two mirrors and used only for training and validation.
-- `final_val` experiments were acquired externally from the training dataset to assess generalization.
-
----
-
-## Pre-trained Model (`LSTM_weights.h5`)
-
-- **Architecture**: 3 stacked LSTM layers (64 → 32 → 16) + TimeDistributed dense head.
-- **Input**: 20-frame sliding window of 6 numerical features.
-- **Output**: Predicted drop width per frame.
-- **Loss**: MAE, Optimizer: Adam (lr=1e-4)
-
-Example inference on your own side-view data:
-
-```python
-from tensorflow import keras
-import numpy as np
-
-features = np.loadtxt('my_new_features.csv', delimiter=',')  # shape: (N_frames, 9)
-model = keras.models.load_model('src/model_arch.json', compile=False)
-model.load_weights('LSTM_weights.h5')
-
-# Reshape for 20-frame sliding prediction
-sliding_input = features.reshape(-1, 20, 9)
-predicted_widths = model.predict(sliding_input)
+```bash
+python train_model.py \
+  --data-file data/dataset.xlsx \
+  --model-output models/lstm_weights.h5 \
+  --epochs 2500 \
+  --batch-size 16 \
+  --window-size 20
 ```
 
----
+- **--data-file**: Path to the Excel dataset (must include `status`).
+- **--model-output**: Path to save trained model weights (.h5).
+- **--epochs**, **--batch-size**, **--window-size**: Training parameters.
 
-## Repository Structure
+### Inference
+
+```bash
+python inference.py \
+  --data-file data/dataset.xlsx \
+  --weights-file models/lstm_weights.h5 \
+  --video-id 14 \
+  --window-size 20 \
+  --output output/14.png
+```
+
+- **--data-file**: Source Excel (with `Video ID`, features, `status`).
+- **--weights-file**: Trained LSTM weights (.h5).
+- **--video-id**: Integer ID of the video to process.
+- **--window-size**: Sliding window length (frames).
+- **--output**: (Optional) Path to save plot (PNG). Without this, the plot displays interactively.
+- **Results Excel**: Saved automatically to `output/<datafile_stem>_<video_id>.xlsx`.
+
+## Data Structure
+
+### Input: `data/dataset.xlsx`
+
+| Column                                       | Unit | Description                            |
+| -------------------------------------------- | ---- | -------------------------------------- |
+| `status`                                     | —    | `train`, `test`, or `final validation` |
+| `Video ID`                                   | —    | Unique video identifier                |
+| `Frame`                                      | —    | Frame number                           |
+| `Advancing (degree)`                         | °    | Advancing contact angle                |
+| `Receding (degree)`                          | °    | Receding contact angle                 |
+| `Drop length (cm)`                           | cm   | Side-view drop length                  |
+| `Drop height (cm)`                           | cm   | Drop centroid height                   |
+| `Velocity (cm/s)`                            | cm/s | Drop sliding speed                     |
+| `Middle line angle (degree)`                 | °    | Angle of drop midline                  |
+| `Tilt angle (degree)`                        | °    | Inclination of the surface             |
+| `Defect size [thickness,length,height] (μm)` | μm   | Surface defect dimensions              |
+| `Drop width (cm)`                            | cm   | Ground-truth front-view width          |
+
+### Intermediate Outputs: `output/`
+
+- `dataset_<video_id>.xlsx`: Filtered data for each Video ID (e.g., `dataset_14.xlsx`, `dataset_234.xlsx`).
+
+## Model Architecture
+
+- **LSTM layer**: 48 units, tanh activation, L2 regularization (λ=0.01)
+- **Dropout**: 0.5
+- **Dense output**: 1 unit, tanh activation
+- **Input shape**: `(window_size, 6)` features per frame
+- **Loss**: MSE, **Optimizer**: Adam
+- **Label scaling**: Ground-truth width scaled from cm to μm
+
+## Output
+
+- **Excel**: `output/<datafile_stem>_<video_id>.xlsx` containing original features plus:
+  - `Estimated Width` (μm)
+  - `Drop width (cm)` (measured)
+- **Plot**: Overlaid estimated vs measured widths vs frame index
+
+## Project Structure
 
 ```
 Drop_width_estimation/
-├── dataset.xlsx            # Side-view measurements and width ground truth
-├── LSTM_weights.h5         # Trained model weights
-├── tutorial.ipynb          # Step-by-step notebook
-├── The setup.png           # Setup image
-├── docs/
-│   └── demo.mp4            # Optional local copy of the demo video
-├── requirements.txt        # Python dependencies
-└── README.md               # This file
+├── data/
+│   └── dataset.xlsx
+├── models/
+│   └── lstm_weights.h5
+├── output/
+│   ├── dataset_14.xlsx
+│   └── dataset_234.xlsx
+├── src/
+│   └── drop_width/
+│       ├── preprocessing.py
+│       ├── model.py
+│       └── side_to_width.py
+├── train_model.py
+├── inference.py
+├── requirements.txt
+├── The setup.png
+└── README.md
 ```
-
----
 
 ## Requirements
 
-Install with:
+See `requirements.txt` for full package versions.
 
-```bash
-pip install -r requirements.txt
-```
+## License
 
-Suggested content of `requirements.txt`:
-
-```
-tensorflow==2.12.0
-keras==2.12.0
-opencv-python>=4.9
-numpy>=1.23
-pandas>=1.5
-scipy>=1.11
-matplotlib>=3.8
-scikit-learn>=1.3
-jupyterlab>=4.0
-tqdm>=4.66
-```
-
-> For exact replication of paper results, these older versions were used:  
-> `tensorflow==2.5.0`, `keras==2.9.0`, `opencv-python==4.5.4`, `numpy==1.20.3`, `pandas==1.3.4`, `scipy==1.7.1`, `matplotlib==3.4.3`.
-
----
+Licensed under the GNU General Public License. See [LICENSE](LICENSE) for details.
 
 ## Citation
-
-If you use this repository, please cite the following article:
 
 ```bibtex
 @article{Shumaly2024,
   title   = {Estimating sliding drop width via side-view features using recurrent neural networks},
-  author  = {Shumaly, Sajjad and Darvish, Fahimeh and Li, Xiaomei and Kukharenko, Oleksandra and Steffen, Werner and Guo, Yanhui and Butt, Hans-Jürgen and Berger, Rüdiger},
+  author  = {Shumaly, Sajjad and Darvish, Fahimeh and Li, Xiaomei and Kukharenko, Oleksandra and Steffen, Werner and Guo, Yanhui and Butt, Hans-J{"u}rgen and Berger, R{"u}diger},
   journal = {Scientific Reports},
   volume  = {14},
   pages   = {12033},
@@ -141,17 +171,6 @@ If you use this repository, please cite the following article:
 }
 ```
 
----
-
 ## Contact
 
-For questions or collaborations:
-
-- **Technical**: Sajjad Shumaly — <shumalys@mpip-mainz.mpg.de>  
-- **Conceptual**: Rüdiger Berger — <berger@mpip-mainz.mpg.de>
-
----
-
-<div align="center">
-  <em>Happy (single-camera) sliding-drop experiments! 🚀</em>
-</div>
+- **Technical**: Sajjad Shumaly — [shumalys@mpip-mainz.mpg.de](mailto\:shumalys@mpip-mainz.mpg.de)
